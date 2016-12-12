@@ -67,6 +67,7 @@ WMS_Provider.prototype.preprocessDataLayer = function preprocessDataLayer(layer)
     }
 
     layer.format = layer.options.mimetype || 'image/png';
+    layer.options.ipr = layer.options.ipr || '';
     layer.crs = layer.projection || 'EPSG:4326';
     layer.width = layer.heightMapWidth || 256;
     layer.version = layer.version || '1.3.0';
