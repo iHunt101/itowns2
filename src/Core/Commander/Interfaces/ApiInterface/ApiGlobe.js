@@ -917,6 +917,25 @@ ApiGlobe.prototype.removeEventListenerLayerChanged = function removeEventListene
     this.viewerDiv.removeEventListener('layerchanged:index', this.callbackLayerChanged, false);
 };
 
+/**
+ * Return all the layer in the scene.
+ * The type can be 'colorLayers' or 'elevationLayers'. If the type is not specified, the function return all the layers.
+ * @param {type} Type - The type of the layers wanted.
+ */
+
+ApiGlobe.prototype.getLayers = function getLayers(type) {
+    const lc = this.scene.getMap().layersConfiguration;
+    const layers = [];
+    if (type === undefined) {
+        [...lc.getColorLayers(), ...lc.getElevationLayers()].forEach(l => layers.push(l));
+    } else if (type === 'colorLayers') {
+        lc.getColorLayers().forEach(l => layers.push(l));
+    } else if (type === 'elevationLayers') {
+        lc.getElevationLayers().forEach(l => layers.push(l));
+    }
+    return layers;
+};
+
 ApiGlobe.prototype.selectNodeById = function selectNodeById(id) {
     this.scene.selectNodeId(id);
     this.scene.update();
