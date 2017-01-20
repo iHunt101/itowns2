@@ -12,12 +12,9 @@ import TileMesh from 'Globe/TileMesh';
 import Atmosphere from 'Globe/Atmosphere';
 import Clouds from 'Globe/Clouds';
 import Capabilities from 'Core/System/Capabilities';
-import GeoCoordinate, { UNIT } from 'Core/Geographic/GeoCoordinate';
-import BasicMaterial from 'Renderer/BasicMaterial';
 import LayersConfiguration from 'Scene/LayersConfiguration';
 import * as THREE from 'three';
 import { SSE_SUBDIVISION_THRESHOLD } from 'Scene/NodeProcess';
-
 
 /* eslint-disable */
 // bbox longitude(0,360),latitude(-90,90)
@@ -36,67 +33,25 @@ function Globe(ellipsoid, gLDebug) {
     this.gLDebug = gLDebug;
     this.ellipsoid = ellipsoid;
 
-    this.batiments = new Layer();
-    this.layerWGS84Zup = new Layer();
-
-    var kml = new THREE.Object3D();
-    this.batiments.add(kml);
-
-    this.batiments.visible = false;
-
-    kml.visible = false;
-
     this.gpxTracks = new Layer();
     var gpx = new THREE.Object3D();
     this.gpxTracks.add(gpx);
     this.gpxTracks.visible = true;
     gpx.visible = true;
 
-    this.tiles = new Quadtree(TileMesh, this.SchemeTileWMTS(schemeTile_1), kml);
+    this.tiles = new Quadtree(TileMesh, this.SchemeTileWMTS(schemeTile_1), null);
     this.layersConfiguration = new LayersConfiguration();
 
     this.atmosphere = this.NOIE ? new Atmosphere(this.ellipsoid) : undefined;
     this.clouds = new Clouds();
 
-    var material = new BasicMaterial(new THREE.Color(1, 0, 0));
-
-    var geometry = new THREE.SphereGeometry(5);
-    var batiment = new THREE.Mesh(geometry, material);
-
-    var position = this.ellipsoid.cartographicToCartesian(new GeoCoordinate(0, 48.87, 200, UNIT.DEGREE));
-
-    position = new THREE.Vector3(4201215.424138484, 171429.945145441, 4779294.873914789);
-
-    // http://www.apsalin.com/convert-geodetic-to-cartesian.aspx
-    // 48.846931,2.337219,50
-    position = new THREE.Vector3(4201801.65418896, 171495.727885073, 4779411.45896233);
-
-    batiment.frustumCulled = false;
-    // material.wireframe      = true;
-    batiment.position.copy(position);
-
-    var material2 = new BasicMaterial(new THREE.Color(1, 0.5, 1));
-    material2.visible = false;
-    var batiment2 = new THREE.Mesh(geometry, material2);
-    var position2 = this.ellipsoid.cartographicToCartesian(new GeoCoordinate(0.001, 48.87, 100, UNIT.DEGREE));
-    batiment2.frustumCulled = false;
-    material2.wireframe = true;
-    batiment2.position.copy(position2);
-
-    // kml.add( batiment );
-    // kml.add( batiment2 );
-
     var zUp = new THREE.Object3D();
-
     zUp.quaternion.multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), -Math.PI / 2));
     zUp.quaternion.multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 0, 1), Math.PI));
-
+    this.layerWGS84Zup = new Layer();
     this.layerWGS84Zup.add(zUp);
-    zUp.add(new THREE.AxisHelper(10000000));
-    zUp.add(batiment);
 
     this.add(this.tiles);
-    this.add(this.batiments);
     this.add(this.gpxTracks);
     // this.add(this.layerWGS84Zup);
 
@@ -152,12 +107,6 @@ Globe.prototype.showClouds = function showClouds(show, satelliteAnimation) {
     this.clouds.visible = show;
 };
 
-Globe.prototype.showKML = function showKML(show) {
-    this.batiments.visible = show;
-
-    this.batiments.children[0].visible = show;
-};
-
 Globe.prototype.updateLightingPos = function updateLightingPos(pos) {
     this.atmosphere.updateLightingPos(pos);
     this.clouds.updateLightingPos(pos);
@@ -179,14 +128,20 @@ Globe.prototype.setLayerOpacity = function setLayerOpacity(id, opacity) {
 Globe.prototype.setLayerVisibility = function setLayerVisibility(id, visible) {
     this.layersConfiguration.setLayerVisibility(id, visible);
 
-    var cO = function cO(object) {
-        if (object.material.setLayerOpacity) {
-            object.material.setLayerVisibility(object.getIndexLayerColor(id), visible);
-        }
-    };
+    var featureLayer = this.layersConfiguration.getGeometryLayerById(id);
+    if (featureLayer != undefined) {
+        featureLayer.root.layer.visible = visible;
+        featureLayer.root.visible = visible;
+    } else {
+        var cO = function cO(object) {
+            if (object.material.setLayerVisibility) {
+                object.material.setLayerVisibility(object.getIndexLayerColor(id), visible);
+            }
+        };
 
-    // children[0] is rootNode
-    this.tiles.children[0].traverse(cO);
+        // children[0] is rootNode
+        this.tiles.children[0].traverse(cO);
+    }
 };
 
 Globe.prototype.updateLayersOrdering = function updateLayersOrdering() {
@@ -224,7 +179,6 @@ Globe.prototype.getZoomLevel = function getZoomLevel() {
     this.tiles.children[0].traverseVisible(cO);
     return cO();
 };
-
 
 Globe.prototype.computeDistanceForZoomLevel = function computeDistanceForZoomLevel(zoom, camera) {
     return camera.preSSE * Math.pow(this.tiles.minLevel, (this.tiles.maxLevel - zoom + 1)) / SSE_SUBDIVISION_THRESHOLD;
