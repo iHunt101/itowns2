@@ -48,11 +48,10 @@ GuiTools.prototype.addElevationLayerGUI = function addElevationLayerGUI(layer) {
 };
 
 GuiTools.prototype.addFeatureLayerGUI = function addFeatureLayerGUI(layer) {
-    if (layer.id.match(/.*[wW]fs.*/)) {
-        var folder = this.featureGui.addFolder(layer.id);
-        folder.add({ visible: true }, 'visible').onChange(value =>
-            this.api.setLayerVisibility(layer.id, value));
-    }
+    var folder = this.featureGui.addFolder(layer.id);
+    folder.add({ visible: true }, 'visible').onChange((value) => {
+        this.api.setLayerVisibility(layer.id, value);
+    });
 };
 
 GuiTools.prototype.addImageryLayersGUI = function addImageryLayersGUI(layers) {

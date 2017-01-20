@@ -233,6 +233,11 @@ TileMesh.prototype.setTexturesLayer = function setTexturesLayer(textures, layerT
     this.loadingCheck();
 };
 
+TileMesh.prototype.setTextureFeatures = function setTextureFeatures(texture) {
+    this.material.uniforms.rasterFeatures.value = true;
+    this.material.uniforms.featureTexture.value = texture;
+};
+
 TileMesh.prototype.isColorLayerDownscaled = function isColorLayerDownscaled(layer) {
     var mat = this.materials[RendererConstant.FINAL];
     return mat.isColorLayerDownscaled(layer, this.level);

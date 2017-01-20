@@ -11,7 +11,8 @@ import Sphere from 'Core/Math/Sphere';
 import CustomEvent from 'custom-event';
 import AnimationPlayer, { Animation, AnimatedExpression } from 'Scene/AnimationPlayer';
 
-var selectClick = new CustomEvent('selectClick');
+const selectClick = new CustomEvent('selectClick');
+const clickDown = new CustomEvent('clickDown');
 
 // TODO:
 // Recast touch for globe
@@ -46,7 +47,6 @@ const CONTROL_KEYS = {
     S: 83,
 };
 
-// TODO: can be optimize for some uses
 var presiceSlerp = function presiceSlerp(qb, t) {
     if (t === 0) {
         return this;
@@ -808,6 +808,11 @@ function GlobeControls(camera, domElement, engine) {
                     ptScreenClick.y = event.clientY - event.target.offsetTop;
 
                     const point = getPickingPosition(ptScreenClick);
+                    // Dispatch 3D position of click for any services that need it
+                    clickDown.mouse = new THREE.Vector2(ptScreenClick.x, ptScreenClick.y);
+                    clickDown.coord3d = point;
+                    domElement.dispatchEvent(clickDown);
+
                     lastRotation = [];
                     // update tangent sphere which passes through the point
                     if (point) {
@@ -973,6 +978,7 @@ function GlobeControls(camera, domElement, engine) {
                 case CONTROL_KEYS.S:
                     // WARNING loop !!!
                     keyS = true;
+                    this.domElement.addEventListener('mousemove', _handlerMouseMove, false);
                     break;
                 default:
             }

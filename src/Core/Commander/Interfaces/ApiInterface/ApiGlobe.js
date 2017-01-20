@@ -9,6 +9,7 @@ import Globe from 'Globe/Globe';
 import WMTS_Provider from 'Core/Commander/Providers/WMTS_Provider';
 import WMS_Provider from 'Core/Commander/Providers/WMS_Provider';
 import TileProvider from 'Core/Commander/Providers/TileProvider';
+import KML_Provider from 'Core/Commander/Providers/KML_Provider';
 import loadGpx from 'Core/Commander/Providers/GpxUtils';
 import GeoCoordinate, { UNIT } from 'Core/Geographic/GeoCoordinate';
 import Ellipsoid from 'Core/Math/Ellipsoid';
@@ -59,7 +60,6 @@ ApiGlobe.prototype.constructor = ApiGlobe;
  */
 ApiGlobe.prototype.add = function add(/* Command*/) {
     // TODO: Implement Me
-
 };
 
 /**
@@ -138,15 +138,37 @@ ApiGlobe.prototype.addImageryLayer = function addImageryLayer(layer) {
 
 /**
  * This function adds an feature layer to the scene. The layer id must be unique.
+ * Add a feature Layer to the scene graph. Handle vector data such as GPX, KML, GeoJSON,...
+ * Needs to be rewrited to have a singleton kml provider for n feature layers
  * @constructor
  * @param {Layer} layer.
  */
 ApiGlobe.prototype.addFeatureLayer = function addFeatureLayer(layer) {
-    preprocessLayer(layer, this.scene.scheduler.getProtocolProvider(layer.protocol));
+    const provider = this.scene.scheduler.getProtocolProvider(layer.protocol);
+    preprocessLayer(layer, provider);
     const map = this.scene.getMap();
     map.layersConfiguration.addGeometryLayer(layer);
     map.add(layer.root.parent);
     this.scene.gfxEngine.add3DScene(layer.root);
+
+    if (layer.local && layer.protocol === 'kml') {
+        provider.parseKML(layer.url).then((obj) => {
+            const state = this.scene.getMap().layersConfiguration.layersState[layer.id];
+            state.polygons = obj.objLinesPolyToRaster.polygons;
+            layer.root.add(obj.geoFeat);
+        });
+    }
+};
+
+ApiGlobe.prototype.pickFeatureLayer = function pickFeatureLayer(layerId, geoCoord) {
+    const polygons = this.scene.getMap().layersConfiguration.layersState[layerId].polygons;
+    if (polygons) {
+        const tools = this.scene.scheduler.getProtocolProvider('wfs').featureToolBox;
+        const attributes = tools.showFeatureAttributesAtPos(geoCoord, polygons);
+        if (attributes) {
+            return attributes;
+        }
+    }
 };
 
 /**
@@ -428,6 +450,7 @@ ApiGlobe.prototype.createSceneGlobe = function createSceneGlobe(coordCarto, view
     this.scene.scheduler.addProtocolProvider('tile', new TileProvider(ellipsoid));
     this.scene.scheduler.addProtocolProvider('wms', new WMS_Provider({ support: map.gLDebug }));
     this.scene.scheduler.addProtocolProvider('wfs', new WFS_Provider({ ellipsoid }));
+    this.scene.scheduler.addProtocolProvider('kml', new KML_Provider(ellipsoid));
 
     this.sceneLoadedDeferred = defer();
     this.addEventListener('globe-loaded', () => {
@@ -559,15 +582,15 @@ ApiGlobe.prototype.pickPosition = function pickPosition(mouse, y) {
             mouse.x = mouse.clientX;
             mouse.y = mouse.clientY;
         } else {
-            mouse.x = mouse;
-            mouse.y = y;
+            mouse = { x: mouse, y };
         } }
 
     var pickedPosition = this.scene.getPickPosition(mouse);
-
     this.scene.renderScene3D();
 
-    return this.projection.cartesianToGeo(pickedPosition);
+    if (pickedPosition) {
+        return this.projection.cartesianToGeo(pickedPosition);
+    }
 };
 
 /**
