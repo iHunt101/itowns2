@@ -113,6 +113,8 @@ BrowseTree.prototype._browseNonDisplayableNode = function _browseNonDisplayableN
     // update node's sse value
     node.sse = camera.computeNodeSSE(node);
     node.setDisplayed(false);
+    // Set visibility at false for node's content
+    node.setVisibility(false);
 
     const sse = process.checkNodeSSE(node);
     if (!node.loaded) {
@@ -184,6 +186,8 @@ BrowseTree.prototype.updateLayer = function updateLayer(layer, camera) {
             return function cRTC(obj) {
                 if (obj.setMatrixRTC) {
                     obj.setMatrixRTC(mRTC);
+                } else if (obj.material && obj.material.setMatrixRTC) {
+                    obj.material.setMatrixRTC(mRTC);
                 }
             };
         }.bind(this)();

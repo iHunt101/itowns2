@@ -124,9 +124,21 @@ TileMesh.prototype.disposeChildren = function disposeChildren() {
     this.pendingSubdivision = false;
 
     while (this.children.length > 0) {
-        var child = this.children[0];
+        const child = this.children[0];
         this.remove(child);
         child.dispose();
+        if (child.content) {
+            const content = child.content;
+            content.forEach((object) => {
+                if (object.parent) {
+                    object.parent.remove(object);
+                }
+                for (let i = object.children.length - 1; i >= 0; i--) {
+                    object.children[i].geometry.dispose();
+                    object.children[i].material.dispose();
+                }
+            });
+        }
     }
 };
 
@@ -137,6 +149,11 @@ TileMesh.prototype.setDisplayed = function setDisplayed(show) {
 
     if (this.helper !== undefined) {
         this.helper.setMaterialVisibility(show);
+    }
+    if (show) {
+        this.content.forEach((element) => {
+            element.visible = true;
+        });
     }
 };
 
