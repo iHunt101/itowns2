@@ -479,16 +479,15 @@ NodeProcess.prototype.processNode = function processNode(node, camera, params) {
  * @returns {NodeProcess_L7.NodeProcess.prototype.frustumCullingOBB.node@pro;camera@call;getFrustum@call;intersectsBox}
  */
 
-var quaternion = new THREE.Quaternion();
+const frustum = new THREE.Frustum();
+const obbMatrixWorld = new THREE.Matrix4();
 
 NodeProcess.prototype.frustumCullingOBB = function frustumCullingOBB(node, camera) {
-    // position in local space
-    var position = node.OBB().worldToLocal(camera.position().clone());
-    position.z -= node.distance;
-
-    quaternion.multiplyQuaternions(node.OBB().inverseQuaternion(), camera.camera3D.quaternion);
-
-    return camera.getFrustumLocalSpace(position, quaternion).intersectsBox(node.OBB().box3D);
+    obbMatrixWorld.multiplyMatrices(node.matrixWorld, node.OBB().matrix);
+    obbMatrixWorld.premultiply(camera.camera3D.matrixWorldInverse);
+    obbMatrixWorld.multiply(camera.camera3D.projectionMatrix);
+    frustum.setFromMatrix(obbMatrixWorld);
+    return frustum.intersectsBox(node.OBB().box3D);
 };
 
 /**
