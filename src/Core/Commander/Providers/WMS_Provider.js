@@ -5,12 +5,8 @@
  */
 
 
-import Provider from 'Core/Commander/Providers/Provider';
-import IoDriver_XBIL from 'Core/Commander/Providers/IoDriver_XBIL';
-import Fetcher from 'Core/Commander/Providers/Fetcher';
+import WMTS_Provider, { computeTileWMTSCoordinates } from 'Core/Commander/Providers/WMTS_Provider';
 import * as THREE from 'three';
-import Projection from 'Core/Geographic/Projection';
-import CacheRessource from 'Core/Commander/Providers/CacheRessource';
 import mE from 'Core/Math/MathExtended';
 import BoundingBox from 'Scene/BoundingBox';
 import { UNIT } from 'Core/Geographic/GeoCoordinate';
@@ -22,22 +18,11 @@ import { UNIT } from 'Core/Geographic/GeoCoordinate';
  * @param {String} options.format: image format (default: format/jpeg)
  * @returns {Object@call;create.url.url|String}
  */
-function WMS_Provider(/* options*/) {
-    // Constructor
-    Provider.call(this, new IoDriver_XBIL());
-    this.cache = CacheRessource();
-    this.projection = new Projection();
-
-    this.getTextureFloat = function getTextureFloat(buffer) {
-        // Start float to RGBA uint8
-        const texture = new THREE.DataTexture(buffer, 256, 256, THREE.AlphaFormat, THREE.FloatType);
-
-        texture.needsUpdate = true;
-        return texture;
-    };
+function WMS_Provider(options) {
+    WMTS_Provider.call(this, options);
 }
 
-WMS_Provider.prototype = Object.create(Provider.prototype);
+WMS_Provider.prototype = Object.create(WMTS_Provider.prototype);
 
 WMS_Provider.prototype.constructor = WMS_Provider;
 
@@ -92,79 +77,26 @@ WMS_Provider.prototype.tileInsideLimit = function tileInsideLimit(tile, layer) {
     return tile.level > 2 && layer.bbox.intersect(tile.bbox);
 };
 
-function computeTileWMTSCoordinates(tile, wmtsLayer, projection) {
-    // Are WMTS coordinates ready?
-    if (!tile.wmtsCoords) {
-        tile.wmtsCoords = {};
-    }
-
-    const tileMatrixSet = wmtsLayer.options.tileMatrixSet;
-    if (!(tileMatrixSet in tile.wmtsCoords)) {
-        const tileCoord = projection.WGS84toWMTS(tile.bbox);
-
-        tile.wmtsCoords[tileMatrixSet] =
-            projection.getCoordWMTS_WGS84(tileCoord, tile.bbox, tileMatrixSet);
-    }
-}
-
 WMS_Provider.prototype.getColorTexture = function getColorTexture(tile, layer, bbox, pitch) {
     if (!this.tileInsideLimit(tile, layer) || tile.material === null) {
         return Promise.resolve();
     }
 
     const url = this.url(bbox, layer);
-
     const result = { pitch };
-    result.texture = this.cache.getRessource(url);
 
-    if (result.texture !== undefined) {
-        return Promise.resolve(result);
-    }
-
-    const { texture, promise } = Fetcher.texture(url);
-    result.texture = texture;
-
-    result.texture.generateMipmaps = false;
-    result.texture.magFilter = THREE.LinearFilter;
-    result.texture.minFilter = THREE.LinearFilter;
-    result.texture.anisotropy = 16;
-    result.texture.coordWMTS = tile.wmtsCoords[layer.options.tileMatrixSet][0];
-    result.texture.bbox = bbox;
-
-    return promise.then(() => {
-        this.cache.addRessource(url, result.texture);
-        result.texture.needsUpdate = true;
+    return this.getColorTextureByUrl(url).then((texture) => {
+        result.texture = texture;
+        result.texture.coordWMTS = tile.wmtsCoords[layer.options.tileMatrixSet][0];
+        result.texture.bbox = bbox;
         return result;
     });
 };
 
 WMS_Provider.prototype.getXbilTexture = function getXbilTexture(tile, layer, bbox, pitch) {
     const url = this.url(bbox, layer);
-
-    // TODO: this is not optimal: if called again before the IoDriver resolves, it'll load the XBIL again
-    const textureCache = this.cache.getRessource(url);
-
-    if (textureCache !== undefined) {
-        return Promise.resolve({
-            pitch,
-            texture: textureCache.texture,
-            min: textureCache.min,
-            max: textureCache.max,
-        });
-    }
-
-    return this._IoDriver.read(url).then((result) => {
-        result.texture = this.getTextureFloat(result.floatArray);
-        result.texture.generateMipmaps = false;
-        result.texture.magFilter = THREE.LinearFilter;
-        result.texture.minFilter = THREE.LinearFilter;
+    return this.getXBilTextureByUrl(url, pitch).then((result) => {
         result.texture.coordWMTS = tile.wmtsCoords[layer.options.tileMatrixSet][0];
-        result.pitch = pitch;
-
-        // In RGBA elevation texture LinearFilter give some errors with nodata value.
-        // need to rewrite sample function in shader
-        this.cache.addRessource(url, result);
-
         return result;
     });
 };
