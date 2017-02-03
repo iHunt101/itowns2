@@ -7,7 +7,7 @@
 
 import * as THREE from 'three';
 
-function OBB(min, max, lookAt, translate) {
+function OBB(min, max, lookAt, translate, up) {
     THREE.Object3D.call(this);
     this.box3D = new THREE.Box3(min, max);
 
@@ -15,9 +15,13 @@ function OBB(min, max, lookAt, translate) {
 
     this.quaInv = this.quaternion.clone().inverse();
 
+    if (up) {
+        this.up.set(up.x, up.y, up.z);
+    }
 
-    if (lookAt)
-        { this.lookAt(lookAt); }
+    if (lookAt) {
+        this.lookAt(lookAt);
+    }
 
 
     if (translate) {

@@ -21,13 +21,13 @@ function Ellipsoid(size) {
 }
 
 Ellipsoid.prototype.geodeticSurfaceNormalCartographic = function geodeticSurfaceNormalCartographic(coordCarto) {
-    var longitude = Math.PI * 2 - coordCarto.longitude();
+    var longitude = coordCarto.longitude();
     var latitude = coordCarto.latitude();
     var cosLatitude = Math.cos(latitude);
 
     var x = cosLatitude * Math.cos(longitude);
-    var z = cosLatitude * Math.sin(longitude);
-    var y = Math.sin(latitude);
+    var y = cosLatitude * Math.sin(longitude);
+    var z = Math.sin(latitude);
 
     var result = new THREE.Vector3(x, y, z);
 

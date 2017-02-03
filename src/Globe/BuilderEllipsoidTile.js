@@ -105,8 +105,8 @@ BuilderEllipsoidTile.prototype.OBB = function OBBFn(params) {
     var vec = new THREE.Vector3();
     var tangentPlane = new THREE.Plane(normal);
 
-    planeZ.setFromUnitVectors(normal, new THREE.Vector3(0, 1, 0));
-    qRotY.setFromAxisAngle(new THREE.Vector3(0, 1, 0), -params.bbox.center.x);
+    planeZ.setFromUnitVectors(normal, new THREE.Vector3(0, 0, 1));
+    qRotY.setFromAxisAngle(new THREE.Vector3(0, 0, 1), -params.bbox.center.x);
     qRotY.multiply(planeZ);
 
     for (var i = 0; i < cardinals.length; i++) {
@@ -120,14 +120,14 @@ BuilderEllipsoidTile.prototype.OBB = function OBBFn(params) {
     }
 
     maxHeight *= 0.5;
-    var width = Math.abs(maxV.z - minV.z) * 0.5;
+    var width = Math.abs(maxV.y - minV.y) * 0.5;
     var height = Math.abs(maxV.x - minV.x) * 0.5;
     var delta = height - Math.abs(cardin3DPlane[5].x);
     var max = new THREE.Vector3(width, height, maxHeight);
     var min = new THREE.Vector3(-width, -height, -maxHeight);
 
     var translate = new THREE.Vector3(0, delta, -maxHeight);
-    var obb = new OBB(min, max, normal, translate);
+    var obb = new OBB(min, max, normal, translate, new THREE.Vector3(0, 0, 1));
 
     return obb;
 };

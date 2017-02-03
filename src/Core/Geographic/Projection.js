@@ -146,7 +146,7 @@ Projection.prototype.WGS84toWMTS = function WGS84toWMTS(bbox) {
     var uX = MathExt.TWO_PI / nX;
     var uY = MathExt.PI / nY;
 
-    var col = Math.floor(((MathExt.PI + bbox.center.x) % (2 * Math.PI)) / uX);
+    var col = Math.floor((MathExt.PI + bbox.center.x) / uX);
     var row = Math.floor(nY - (MathExt.PI_OV_TWO + bbox.center.y) / uY);
 
     return new CoordWMTS(zoom, row, col);
@@ -161,28 +161,22 @@ Projection.prototype.UnitaryToLatitudeWGS84 = function UnitaryToLatitudeWGS84(v,
 };
 
 Projection.prototype.cartesianToGeo = function cartesianToGeo(position) {
-    // TODO: warning switch coord
-    var p = position.clone();
-    p.x = position.x;
-    p.y = position.z;
-    p.z = position.y;
-
-    var R = p.length();
+    var R = position.length();
     var a = 6378137;
     var b = 6356752.3142451793;
     var e = Math.sqrt((a * a - b * b) / (a * a));
     var f = 1 - Math.sqrt(1 - e * e);
-    var rsqXY = Math.sqrt(p.x * p.x + p.y * p.y);
+    var rsqXY = Math.sqrt(position.x * position.x + position.y * position.y);
 
-    var theta = Math.atan2(p.y, p.x);
-    var nu = Math.atan(p.z / rsqXY * ((1 - f) + e * e * a / R));
+    var theta = Math.atan2(position.y, position.x);
+    var nu = Math.atan(position.z / rsqXY * ((1 - f) + e * e * a / R));
 
     var sinu = Math.sin(nu);
     var cosu = Math.cos(nu);
 
-    var phi = Math.atan((p.z * (1 - f) + e * e * a * sinu * sinu * sinu) / ((1 - f) * (rsqXY - e * e * a * cosu * cosu * cosu)));
+    var phi = Math.atan((position.z * (1 - f) + e * e * a * sinu * sinu * sinu) / ((1 - f) * (rsqXY - e * e * a * cosu * cosu * cosu)));
 
-    var h = (rsqXY * Math.cos(phi)) + p.z * Math.sin(phi) - a * Math.sqrt(1 - e * e * Math.sin(phi) * Math.sin(phi));
+    var h = (rsqXY * Math.cos(phi)) + position.z * Math.sin(phi) - a * Math.sqrt(1 - e * e * Math.sin(phi) * Math.sin(phi));
 
     // TODO: return only WGS84 coordinate
     return new GeoCoordinate(-theta, phi, h);
