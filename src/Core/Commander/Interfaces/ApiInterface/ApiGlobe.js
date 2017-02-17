@@ -109,7 +109,7 @@ function preprocessLayer(layer, provider) {
  */
 ApiGlobe.prototype.init = function init() {
     const map = this.scene.getMap();
-    map.tiles.init(map.layersConfiguration.getGeometryLayers()[0]);
+    map.tiles.init(map.layersConfiguration.getGeometryLayers()[0], map.layersConfiguration.lightingLayers[0]);
 };
 
 /**
@@ -399,6 +399,9 @@ ApiGlobe.prototype.setRealisticLightingOn = function setRealisticLightingOn(valu
     this.scene.setLightingPos();
     this.scene.gfxEngine.setLightingOn(value);
     this.scene.getMap().setRealisticLightingOn(value);
+    const lightingLayers = this.scene.getMap().layersConfiguration.lightingLayers[0];
+    lightingLayers.enable = value;
+    lightingLayers.position = this.scene.lightingPos;
     this.scene.browserScene.updateMaterialUniform('lightingOn', value);
     this.scene.renderScene3D();
 };
