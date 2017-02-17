@@ -62,6 +62,9 @@ function TileMesh(params, builder, geometryCache) {
     // Set current material in Final Rendering
     this.material = this.materials[RendererConstant.FINAL];
 
+    this.material.setLightingOn(params.light.enable);
+    this.material.uniforms.lightPosition.value = params.light.position;
+
     this.frustumCulled = false;
 
     // Layer

@@ -86,6 +86,7 @@ NodeProcess.prototype.subdivideNode = function subdivideNode(node, camera, param
                 bbox: bboxes[i],
                 type: quadtree.type,
                 redraw: false,
+                light: params.layersConfig.lightingLayers[0],
             };
 
             quadtree.scheduler.execute(command).then((child) => {

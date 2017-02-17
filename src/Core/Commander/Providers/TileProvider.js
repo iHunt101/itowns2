@@ -30,8 +30,7 @@ TileProvider.prototype = Object.create(Provider.prototype);
 
 TileProvider.prototype.constructor = TileProvider;
 
-TileProvider.prototype.preprocessLayer = function preprocessLayer(/* layer*/) {
-    /* no-op */
+TileProvider.prototype.preprocessDataLayer = function preprocessDataLayer(/* layer*/) {
 };
 
 TileProvider.prototype.executeCommand = function executeCommand(command) {
@@ -44,6 +43,7 @@ TileProvider.prototype.executeCommand = function executeCommand(command) {
         bbox,
         level: (command.level === undefined) ? (parent.level + 1) : command.level,
         segment: 16,
+        light: command.light,
     };
 
     var tile = new command.type(params, this.builder);
